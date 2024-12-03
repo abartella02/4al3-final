@@ -3,6 +3,6 @@ pandas
 numpy
 scikit-learn
 torch
-torchvis
-keras
+torchvision
 black
+tensorflow
