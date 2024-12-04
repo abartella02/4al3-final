@@ -87,8 +87,6 @@ class rnn_textclassifier:
 
 
 
-
-
 # load the csv
 dataset = pd.read_csv('LLM.csv')
 
