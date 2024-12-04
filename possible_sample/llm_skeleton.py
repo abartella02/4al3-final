@@ -84,6 +84,17 @@ class rnn_textclassifier:
                 predicted_labels.append(0)
         return predicted_labels
 
+    
+    def prediction_metrics(self, y_predicted, y_actual):
+        
+        tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_actual, y_predicted).ravel()
+
+        return tn, fp, fn, tp
+
+
+        
+        
+
 
 
 
@@ -118,19 +129,16 @@ rnn.train(train_text_tensor, train_label_tensor, epoch=10, batch_size=10)
 # predict
 predicted_labels = rnn.predict(test_text_tensor)
 
-correct_predictions = 0
-total_predictions = 0
+tn, fp, fn, tp = rnn.prediction_metrics(y_predicted=predicted_labels, y_actual=test_label)
 
-# count how many correct predictions there are
-for prediction, actual, text in zip(predicted_labels, test_label, test_text):
-    if prediction != actual:
-        print("text: ", text, "predicted: ", prediction, "actual: ", actual)
-    if prediction == actual:
-        correct_predictions += 1
-    total_predictions += 1
+accuracy = (tp+tn)/(tp+fp+fn+tn)
+sensitivity  = tp/(tp+fn)
+specificity = tn/((tn+fp))
 
-print("correct predictions: ", correct_predictions)
-print("total_predictions: ", total_predictions)
+print("test accuracy: ", accuracy)
+print("test sensitivity: ", sensitivity)
+print("test specificity: ", specificity)
+
 
 
 
