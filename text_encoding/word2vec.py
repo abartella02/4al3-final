@@ -65,12 +65,11 @@ class Word2Vec:
             with open(prev_index_to_key, "w") as f:
                 json.dump(self.word_indices, f)
 
-    @property
-    def embed_layer(self) -> Embedding:
+    def embed_layer(self, output_dim=None) -> Embedding:
         """Convert word2vec embeddings to tensorflow embedding layer"""
         return Embedding(
             input_dim=self.weights.shape[0],
-            output_dim=self.weights.shape[1],
+            output_dim=self.weights.shape[1] if output_dim is None else output_dim,
             weights=[self.weights],
             trainable=False,
         )
