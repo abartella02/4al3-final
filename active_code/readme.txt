@@ -1,5 +1,5 @@
 This folder contains the good code.
 
-One cleanup function that preprocesses the csv's
+jackie_ray_cleanup_crew: preprocessing the Kaggle CSV and ouputting a new csv that we will feed into the model
 
-One main function to run the thing
+ray_main: main code that does everything else
