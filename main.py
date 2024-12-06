@@ -43,7 +43,7 @@ class RNNTextClassifier:
             print('passed input layer', input_dimension)
             self.model.add(embed_layer)
             self.model.add(tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(embed_layer.output_dim)))
-            self.model.add(tf.keras.layers.Dense(embed_layer.output_dim), activation='relu')
+            self.model.add(tf.keras.layers.Dense(embed_layer.output_dim, activation='relu'))
 
         self.model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
         self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -136,7 +136,7 @@ def preprocess(dataset, samples_per_class):
     data = pd.concat((features, labels), axis=1)
 
     # Drop rows where train_label is NaN
-    data = data.dropna()
+    data = data.dropna(subset=[labels.name])
 
     # Separate train_text and train_label
     features = data.iloc[:, :-1]

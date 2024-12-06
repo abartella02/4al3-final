@@ -31,6 +31,7 @@ def data_cleanup(dataset, amount_per_class):
     shortened_data = pd.DataFrame()
 
     # Get an equal amount of random samples from each class and add it to the new dataset df
+    np.random.seed(123)
     label_1 = dataset[dataset['label'] == 1].sample(amount_per_class, random_state=42)
     shortened_data = shortened_data._append(label_1)
     label_0 = dataset[dataset['label'] == 0].sample(amount_per_class, random_state=42)

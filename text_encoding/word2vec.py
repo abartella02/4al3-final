@@ -94,8 +94,6 @@ class Word2Vec:
         )  # pad all other samples
 
         features = pd.DataFrame(encoded_sentences)  # create feature matrix
-        labels = self.dataset["Label"].map(
-            {"student": 0, "ai": 1}
-        )  # create label matrix
+        labels = self.dataset["Label"]#.map({"student": 0, "ai": 1})  # create label matrix
 
         return features, labels
