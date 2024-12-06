@@ -1,9 +1,13 @@
 import pandas as pd
+import kagglehub
 import tensorflow as tf
 from tensorflow.keras.layers import Embedding
 from sklearn.metrics import confusion_matrix
 
+import os
+import shutil
 from typing import Tuple, Optional
+from pathlib import Path
 
 from text_encoding import Word2Vec
 from sampling_strategy import sample_and_clean
@@ -56,7 +60,13 @@ class RNNTextClassifier:
             loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]
         )
 
-    def train(self, train_text: pd.DataFrame, train_label: pd.DataFrame, epoch: int, batch_size: int) -> None:
+    def train(
+        self,
+        train_text: pd.DataFrame,
+        train_label: pd.DataFrame,
+        epoch: int,
+        batch_size: int,
+    ) -> None:
         self.model.fit(
             train_text, train_label, epochs=epoch, batch_size=batch_size, verbose=2
         )
@@ -71,16 +81,21 @@ class RNNTextClassifier:
                 predicted_labels.append(0)
         return predicted_labels
 
-    def prediction_metrics(self, y_predicted: list[int], y_actual: pd.DataFrame) -> Tuple[int, int, int, int]:
+    def prediction_metrics(
+        self, y_predicted: list[int], y_actual: pd.DataFrame
+    ) -> Tuple[int, int, int, int]:
         """Return confusion matrix metrics"""
         tn, fp, fn, tp = confusion_matrix(y_actual, y_predicted).ravel()
 
         return tn, fp, fn, tp
 
 
-def preprocess(dataset: pd.DataFrame, samples_per_class: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def preprocess(
+    dataset: pd.DataFrame, samples_per_class: int
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     class Dataset(pd.DataFrame):
         """Subclass of DataFrame to carry on the Word2Vec object as an attribute, for use later"""
+
         _metadata = ["w2v"]  # Ensures `w2v` persists through Pandas operations
 
         def __init__(self, data: pd.DataFrame, w2v: Optional[Word2Vec] = None) -> None:
@@ -113,7 +128,44 @@ def preprocess(dataset: pd.DataFrame, samples_per_class: int) -> Tuple[pd.DataFr
     return Dataset(features, w2v), labels
 
 
+def download_dataset() -> Path:
+    """Download the dataset to ./data/ if the dataset has not already been downloaded"""
+    # path to dataset in kagglehub
+    dataset = "jdragonxherrera/augmented-data-for-llm-detect-ai-generated-text"
+
+    # path to local folder
+    dest_path = Path(__file__).parent / "data"
+
+    # if the dataset files we need do not exist locally
+    if not (
+        (dest_path / "final_test.csv").exists()
+        and (dest_path / "final_train.csv").exists()
+    ):
+        # delete /data/ if it exists but the csv's we need are not inside
+        if dest_path.exists():
+            shutil.rmtree(dest_path)
+        # remake /data/ folder
+        dest_path.mkdir(parents=True, exist_ok=True)
+
+        # Download latest version
+        # if the kaggle folder is present but no files are inside, the download will not initiate
+        path = kagglehub.dataset_download(dataset)
+        if len(os.listdir(path)) == 0:
+            # if the folder is empty from a previous move operation, delete the folder
+            shutil.rmtree(Path(path).parent)
+            # attempt to download the dataset again
+            path = kagglehub.dataset_download(dataset)
+
+        for item in os.listdir(path):
+            # move dataset csv's to repo folder
+            shutil.move(os.path.join(path, item), dest_path)
+
+    return dest_path
+
+
 if __name__ == "__main__":
+    download_dataset()
+
     train = pd.read_csv("data/final_train.csv")
     test = pd.read_csv("data/final_test.csv")
 
