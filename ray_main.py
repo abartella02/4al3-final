@@ -90,7 +90,7 @@ class Word2Vec:
         ]  # convert to list of indices
 
 
-    def encode_text_dataset(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def encode_text_dataset(self, label_type = 0) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Encode words in dataset as integers corresponding to weights in the embedding layer"""
         encoded_sentences = list(
             self.dataset["Text"].apply(self.__words_to_indices)
@@ -103,9 +103,16 @@ class Word2Vec:
         )  # pad all other samples
 
         features = pd.DataFrame(encoded_sentences)  # create feature matrix
-        labels = self.dataset["Label"].map(
-            {"student": 0, "ai": 1}
-        )  # create label matrix
+
+        # if label in the csv is 0/1
+        if label_type == 0:
+            labels = self.dataset["Label"]
+
+        # if lavel in the csv is "student"/"ai"
+        elif label_type == 1:
+            labels = self.dataset["Label"].map(
+                {"student": 0, "ai": 1}
+            )  # create label matrix
 
         return features, labels
 
@@ -204,6 +211,10 @@ def tpr_fpr(predictions, real):
     return tp_count, fp_count, tn_count, fn_count
 
 
+
+
+
+
 def main():
 
     '''
@@ -214,7 +225,7 @@ def main():
 
 
     # load in data
-    df = pd.read_csv('short.csv')
+    df = pd.read_csv('edited_train.csv')
 
     # convert to numerical representation
     w2v = Word2Vec(dataset=df)
@@ -233,6 +244,22 @@ def main():
     # split data in to train and test and their text and label columns
     train_text, train_label, test_text, test_label = rnn.split_data(processed_data, 0.2)
 
+
+    # Combine train_text and train_label for filtering
+    data = pd.concat([train_text, train_label], axis=1)
+    
+    # Drop rows where train_label is NaN
+    data = data.dropna(subset=[train_label.name])
+    
+    # Separate train_text and train_label
+    train_text = data.iloc[:, :-1]
+    train_label = data.iloc[:, -1]
+    
+
+    print("total number of training points")
+    print(len(train_label))
+    print("number of positive training points")
+    print(sum(train_label))
 
     '''   
     # code to check for illegal words
