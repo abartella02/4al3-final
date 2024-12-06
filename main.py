@@ -1,22 +1,34 @@
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.layers import Embedding
-
 from sklearn.metrics import confusion_matrix
 
-from typing import Tuple
+from typing import Tuple, Optional
 
 from text_encoding import Word2Vec
 from sampling_strategy import sample_and_clean
 
 
 class RNNTextClassifier:
+    """
+    Basic RNN text classifier, as outlined in Tensorflow's
+    "Text classification with an RNN" and "RNN Demo" from AvenueToLearn.
+    """
 
-    def __init__(self, w2v_embedding_layer: Embedding = None):
+    def __init__(self, w2v_embedding_layer: Optional[Embedding] = None) -> None:
         self.model = None
         self.embedding_layer = w2v_embedding_layer
 
-    def build(self, input_dimension):
+    def build(self, input_dimension: int) -> None:
+        """
+        Build the model.
+        Layers:
+            * Embedding layer (for word2vec)
+            * Bidirectional layer
+            * Dense layer (fully connected layer with relu activation)
+
+        Use embedded layer from word2vec object if available.
+        """
         self.model = tf.keras.Sequential()
         if self.embedding_layer is None:
             self.model.add(
@@ -44,12 +56,12 @@ class RNNTextClassifier:
             loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]
         )
 
-    def train(self, train_text, train_label, epoch, batch_size):
+    def train(self, train_text: pd.DataFrame, train_label: pd.DataFrame, epoch: int, batch_size: int) -> None:
         self.model.fit(
             train_text, train_label, epochs=epoch, batch_size=batch_size, verbose=2
         )
 
-    def predict(self, test_text):
+    def predict(self, test_text: pd.DataFrame) -> list[int]:
         results = self.model.predict(test_text)
         predicted_labels = []
         for value in results:
@@ -59,18 +71,19 @@ class RNNTextClassifier:
                 predicted_labels.append(0)
         return predicted_labels
 
-    def prediction_metrics(self, y_predicted, y_actual) -> Tuple[int, int, int, int]:
+    def prediction_metrics(self, y_predicted: list[int], y_actual: pd.DataFrame) -> Tuple[int, int, int, int]:
         """Return confusion matrix metrics"""
         tn, fp, fn, tp = confusion_matrix(y_actual, y_predicted).ravel()
 
         return tn, fp, fn, tp
 
 
-def preprocess(dataset, samples_per_class):
+def preprocess(dataset: pd.DataFrame, samples_per_class: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
     class Dataset(pd.DataFrame):
+        """Subclass of DataFrame to carry on the Word2Vec object as an attribute, for use later"""
         _metadata = ["w2v"]  # Ensures `w2v` persists through Pandas operations
 
-        def __init__(self, data, w2v=None):
+        def __init__(self, data: pd.DataFrame, w2v: Optional[Word2Vec] = None) -> None:
             super().__init__(data)
             self.w2v = w2v
 

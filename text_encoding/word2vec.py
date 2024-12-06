@@ -2,7 +2,6 @@ import numpy as np
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.layers import Embedding
 import gensim.downloader as api
-from gensim.models import KeyedVectors
 import re
 import pandas as pd
 from typing import Tuple
@@ -15,6 +14,7 @@ class Word2Vec:
     Encode a dataframe where the samples are selections of text (essays, sentences, etc)
     using pre-trained word2vec model. Default model is "google-news-300".
     """
+
     def __init__(
         self, dataset: pd.DataFrame, model: str = "word2vec-google-news-300"
     ) -> None:
@@ -94,6 +94,6 @@ class Word2Vec:
         )  # pad all other samples
 
         features = pd.DataFrame(encoded_sentences)  # create feature matrix
-        labels = self.dataset["Label"]#.map({"student": 0, "ai": 1})  # create label matrix
+        labels = self.dataset["Label"]
 
         return features, labels
