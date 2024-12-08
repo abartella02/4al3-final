@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import kagglehub
-import gensim.downloader as api
+from gensim.models import KeyedVectors
 import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.layers import Embedding
@@ -12,8 +12,8 @@ import os
 import shutil
 from typing import Tuple, Optional
 from pathlib import Path
-import json
 import re
+from urllib import request
 
 
 class Word2Vec:
@@ -22,55 +22,25 @@ class Word2Vec:
     using pre-trained word2vec model. Default model is "google-news-300".
     """
 
-    def __init__(
-        self, dataset: pd.DataFrame, model: str = "word2vec-google-news-300"
-    ) -> None:
+    def __init__(self, dataset: pd.DataFrame) -> None:
         self.dataset = dataset
-        __dataset_same = False  # has a new dataset been entered?
 
-        # paths to stored csv, weights, and index_to_key dict
-        prev_data = Path(__file__).parent / ".word2vec"
-        prev_csv = prev_data / "prev.csv"
-        prev_weights = prev_data / "prev_weights.npy"
-        prev_index_to_key = prev_data / "index_to_key.json"
+        model_path = Path(".word2vec/GoogleNews-vectors-negative300-SLIM.bin.gz")
 
-        # check if the previous dataframe exists
-        # to avoid loading the (very large) word2vec model if possible
-        if not prev_csv.exists():
-            prev_data.mkdir(exist_ok=True)  # make containing folder
-            self.dataset.to_csv(prev_csv)  # write current dataframe to folder
-        else:
-            prev_df = pd.read_csv(prev_csv)  # load previous df
-            prev_df = prev_df.drop(
-                columns=prev_df.columns[0]
-            )  # drop first column (row numbers)
-            if prev_df.equals(dataset):  # check if current and previous df are the same
-                print("Same dataset entered.")
-                __dataset_same = True  # set flag
-            else:
-                print("New dataset entered.")
-                self.dataset.to_csv(prev_csv)  # write current df to folder
+        if not model_path.exists():
+            print("downloading pre-trained word2vec model...")
+            model_path.parent.mkdir(exist_ok=True)
+            download_url = "https://github.com/eyaler/word2vec-slim/raw/refs/heads/master/GoogleNews-vectors-negative300-SLIM.bin.gz?download="
+            request.urlretrieve(download_url, model_path)
 
-        # if current dataframe == previous dataframe and all important data exists
-        if __dataset_same and prev_weights.exists() and prev_index_to_key.exists():
-            print("Loading saved weights and indices...")
-            # load weights and word indices from folder instead of recalculating
-            self.weights = np.load(prev_weights)
-            with open(prev_index_to_key, "r") as f:
-                self.word_indices = json.load(f)
+        # load word2vec model and calculate weights and word indices as normal
+        print("Loading model...")
+        keyed_vectors = KeyedVectors.load_word2vec_format(str(model_path), binary=True)
+        self.weights = keyed_vectors.vectors
 
-        else:
-            # load word2vec model and calculate weights and word indices as normal
-            print("Loading model...")
-            keyed_vectors = api.load(model)
-            self.weights = keyed_vectors.vectors
-            np.save(prev_weights, self.weights)
-
-            self.word_indices = {
-                word.lower(): idx for idx, word in enumerate(keyed_vectors.index_to_key)
-            }
-            with open(prev_index_to_key, "w") as f:
-                json.dump(self.word_indices, f)
+        self.word_indices = {
+            word.lower(): idx for idx, word in enumerate(keyed_vectors.index_to_key)
+        }
 
     def embed_layer(self, output_dim=None) -> Embedding:
         """Convert word2vec embeddings to tensorflow embedding layer"""
@@ -110,7 +80,9 @@ class SamplingStrategy:
     def __init__(self):
         pass
 
-    def data_cleanup(self, dataset: pd.DataFrame, amount_per_class: int) -> pd.DataFrame:
+    def data_cleanup(
+        self, dataset: pd.DataFrame, amount_per_class: int
+    ) -> pd.DataFrame:
         # Drop rows with NaN in the 'text' column
         dataset = dataset.dropna(subset=["text"])
 
@@ -348,8 +320,6 @@ if __name__ == "__main__":
 
     print("total number of training points")
     print(len(train_labels))
-    print("number of positive training points")
-    print(sum(train_labels))
 
     # input dimension is number of words we have downloaded
     input_dim = len(train_features.w2v.word_indices)
@@ -357,6 +327,8 @@ if __name__ == "__main__":
     rnn.build(input_dimension=input_dim)
 
     # train the model
-    rnn.train(train_features, train_labels, epoch=15, batch_size=10)
+    print("training...")
+    rnn.train(train_features, train_labels, epoch=9, batch_size=10)
 
+    print("saving model...")
     rnn.model.save("saved_model.h5")
