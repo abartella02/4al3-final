@@ -1,3 +1,13 @@
+"""
+Milestone 2 training file
+
+This model uses a pre-trained word2vec model to obtain weights for words in the dataset.
+The word2vec model is a slim version of the Google-News-300 model, available here:
+    *  https://github.com/eyaler/word2vec-slim/
+
+References are included in milestone 2 report.
+"""
+
 import pandas as pd
 import numpy as np
 import kagglehub
@@ -77,7 +87,7 @@ class Word2Vec:
 
 
 class SamplingStrategy:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def data_cleanup(
@@ -97,14 +107,17 @@ class SamplingStrategy:
 
         # Get an equal amount of random samples from each class and add it to the new dataset df
         np.random.seed(123)
-        label_1 = dataset[dataset["label"] == 1].sample(
-            amount_per_class, random_state=42
-        )
-        shortened_data = shortened_data._append(label_1)
-        label_0 = dataset[dataset["label"] == 0].sample(
-            amount_per_class, random_state=42
-        )
-        shortened_data = shortened_data._append(label_0)
+        if amount_per_class > 0:
+            label_1 = dataset[dataset["label"] == 1].sample(
+                amount_per_class, random_state=42
+            )
+            shortened_data = shortened_data._append(label_1)
+            label_0 = dataset[dataset["label"] == 0].sample(
+                amount_per_class, random_state=42
+            )
+            shortened_data = shortened_data._append(label_0)
+        else:
+            shortened_data = dataset
 
         # Shuffle and reset the index for the new df
         shortened_data = shortened_data.sample(frac=1)
@@ -216,15 +229,18 @@ class RNNTextClassifier:
             train_text, train_label, epochs=epoch, batch_size=batch_size, verbose=2
         )
 
-    def predict(self, test_text: pd.DataFrame) -> list[int]:
+    def predict(self, test_text: pd.DataFrame) -> Tuple[list[int], list[float]]:
         results = self.model.predict(test_text)
         predicted_labels = []
+        predicted_confidence = []
         for value in results:
             if value > 0.5:
                 predicted_labels.append(1)
             else:
                 predicted_labels.append(0)
-        return predicted_labels
+            predicted_confidence.append(value)
+
+        return predicted_labels, predicted_confidence
 
     def prediction_metrics(
         self, y_predicted: list[int], y_actual: pd.DataFrame
@@ -310,11 +326,14 @@ def download_dataset() -> Path:
 
 
 if __name__ == "__main__":
+    import time
+
+    start_time = time.time()
     download_dataset()
 
     train = pd.read_csv("data/final_train.csv")
 
-    train_features, train_labels = preprocess(train, samples_per_class=25000)
+    train_features, train_labels = preprocess(train, samples_per_class=1000)
 
     rnn = RNNTextClassifier(w2v_embedding_layer=train_features.w2v.embed_layer)
 
@@ -328,7 +347,8 @@ if __name__ == "__main__":
 
     # train the model
     print("training...")
-    rnn.train(train_features, train_labels, epoch=9, batch_size=10)
+    rnn.train(train_features, train_labels, epoch=5, batch_size=10)
+    print(f"elapsed = {(time.time()-start_time)//60} minutes")
 
     print("saving model...")
     rnn.model.save("saved_model.h5")
