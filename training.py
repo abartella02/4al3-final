@@ -6,6 +6,7 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.layers import Embedding
 from tensorflow.keras import Model
+from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.metrics import confusion_matrix
 
 import os
@@ -212,8 +213,12 @@ class RNNTextClassifier:
         epoch: int,
         batch_size: int,
     ) -> None:
+
+        # KERAS built in in early stopping, will stop training once loss is the same for two consecutive epochs
+        callbacks = [EarlyStopping(monitor = "loss", patience = 2, restore_best_weights = False)]
+
         self.model.fit(
-            train_text, train_label, epochs=epoch, batch_size=batch_size, verbose=2
+            train_text, train_label, epochs=epoch, batch_size=batch_size, verbose=2, callbacks = callbacks
         )
 
     def predict(self, test_text: pd.DataFrame) -> list[int]:
