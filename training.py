@@ -8,6 +8,7 @@ from tensorflow.keras.layers import Embedding
 from tensorflow.keras import Model
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.metrics import confusion_matrix
+import spacy
 
 import os
 import shutil
@@ -78,7 +79,7 @@ class Word2Vec:
 
 
 class SamplingStrategy:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def data_cleanup(
@@ -115,6 +116,12 @@ class SamplingStrategy:
 
     def condense_text(self, data: pd.DataFrame, text_column_name: str) -> pd.DataFrame:
         """Function to convert each text sample into single paragraphs with no spacing, new lines, etc"""
+        nlp = spacy.load("en_core_web_sm")
+
+        def lemmatize(x):
+            nonlocal nlp
+            doc = nlp(x)
+            return ' '.join([token.lemma_ for token in doc])
 
         # Replace multiple line breaks with a space for each item in the column
         data[text_column_name] = data[text_column_name].str.replace(
@@ -126,6 +133,7 @@ class SamplingStrategy:
             data[text_column_name].str.replace(r"\s+", " ", regex=True).str.strip()
         )
 
+        data[text_column_name] = data[text_column_name].apply(lemmatize)
         return data
 
     def sample_and_clean(
@@ -319,7 +327,10 @@ if __name__ == "__main__":
 
     train = pd.read_csv("data/final_train.csv")
 
-    train_features, train_labels = preprocess(train, samples_per_class=25000)
+    samples_per_class = 1000
+    epochs = 9
+
+    train_features, train_labels = preprocess(train, samples_per_class=samples_per_class)
 
     rnn = RNNTextClassifier(w2v_embedding_layer=train_features.w2v.embed_layer)
 
@@ -334,6 +345,7 @@ if __name__ == "__main__":
     # train the model
     print("training...")
     rnn.train(train_features, train_labels, epoch=9, batch_size=10)
+    rnn.train(train_features, train_labels, epoch=epochs, batch_size=10)
 
     print("saving model...")
     rnn.model.save("saved_model.h5")
