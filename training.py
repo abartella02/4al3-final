@@ -289,6 +289,7 @@ def preprocess(
 
 def download_dataset() -> Path:
     """Download the dataset to ./data/ if the dataset has not already been downloaded"""
+    spacy.cli.download('en_core_web_sm')
     # path to dataset in kagglehub
     dataset = "jdragonxherrera/augmented-data-for-llm-detect-ai-generated-text"
 
@@ -327,7 +328,7 @@ if __name__ == "__main__":
 
     train = pd.read_csv("data/final_train.csv")
 
-    samples_per_class = 1000
+    samples_per_class = 15000
     epochs = 9
 
     train_features, train_labels = preprocess(train, samples_per_class=samples_per_class)
@@ -344,7 +345,6 @@ if __name__ == "__main__":
 
     # train the model
     print("training...")
-    rnn.train(train_features, train_labels, epoch=9, batch_size=10)
     rnn.train(train_features, train_labels, epoch=epochs, batch_size=10)
 
     print("saving model...")
