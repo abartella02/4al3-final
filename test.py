@@ -1,5 +1,7 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 from tensorflow.keras.models import load_model
+from sklearn.metrics import ConfusionMatrixDisplay
 
 from training import preprocess
 from training import RNNTextClassifier, download_dataset
@@ -26,7 +28,9 @@ if __name__ == "__main__":
     accuracy = (tp + tn) / (tp + fp + fn + tn)
     sensitivity = tp / (tp + fn)
     specificity = tn / (tn + fp)
+    ConfusionMatrixDisplay(pd.DataFrame([[tn, fp], [fn, tp]]).to_numpy()).plot()
 
     print("test accuracy: ", accuracy)
     print("test sensitivity: ", sensitivity)
     print("test specificity: ", specificity)
+    plt.show()
