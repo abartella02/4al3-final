@@ -1,4 +1,7 @@
-# Milestone 1
+# RealText: AI generated text detector
+This project was created as part of SFWRENG 4AL3. The follwing is a detailed report on the tool and its development process.
+
+## Milestone 1
 
 ### Team information: contributors
 
@@ -78,7 +81,7 @@ word, absolute rank of the word, entropy of the predicted distribution [6].
 
 [5] https://aclanthology.org/P19-3019/
 
-# Milestone 2
+## Milestone 2
 
 ### Refined Problem
 The problem identified is the difficulty of discerning AI generated content from organic, human
@@ -170,7 +173,7 @@ approximately 25 hours. With more time and computer power we could train our mod
 theoretically resulting in a lower rate of overfitting and overall higher accuracy.
 
 
-# Milestone 3
+## Milestone 3
 
 ### Preprocessing Improvements
 We implemented two main changes in the way we preprocessed our data: increasing the size of our
